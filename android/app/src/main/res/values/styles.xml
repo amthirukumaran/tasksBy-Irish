@@ -6,6 +6,10 @@
         <!-- <item name="android:editTextBackground">@layout/launch_screen</item> -->
         <!-- <item name="android:windowBackground">@drawable/screen</item> -->
         <item name="android:editTextBackground">@drawable/screen</item>
+        <!-- <item name="android:windowTranslucentStatus">true</item> -->
+        <!-- <item name="android:windowTranslucentNavigation">true</item> -->
+        <!-- <item name="android:windowDrawsSystemBarBackgrounds">true</item> -->
+
     </style>
 
 </resources>

@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "857439258515",
+    "project_id": "tasksby-irish",
+    "storage_bucket": "tasksby-irish.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:857439258515:android:8b1d34ec45faa118714a66",
+        "android_client_info": {
+          "package_name": "com.tasksbyirish"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "857439258515-oldbcer5fp999r6o8p413bd6upm5ab16.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.tasksbyirish",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "857439258515-h6cfhl7nk0te4relfaga098kva755a0o.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA6nsKCT6pwQSx5xuOKyjGSxL549tDhRq4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "857439258515-h6cfhl7nk0te4relfaga098kva755a0o.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
