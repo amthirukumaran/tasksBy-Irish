@@ -4,11 +4,11 @@ import { useEffect, useState } from 'react';
 import Popover from 'react-native-popover-view';
 import DatePicker from 'react-native-date-picker';
 import { Calendar } from 'react-native-calendars';
-import NetInfo from "@react-native-community/netinfo";
 import { useDispatch, useSelector } from 'react-redux';
-import { useIsFocused, useNavigation, useRoute } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ActivityIndicator, BackHandler, Keyboard, Pressable, ScrollView, Text, TextInput, View } from "react-native"
+import notifee, { TriggerType, AndroidImportance } from '@notifee/react-native';
+import { useIsFocused, useNavigation, useRoute } from "@react-navigation/native";
+import { ActivityIndicator, BackHandler, Keyboard, Linking, Pressable, ScrollView, Text, TextInput, View } from "react-native"
 
 //icon-Imports
 import Entypo from 'react-native-vector-icons/Entypo';
@@ -20,32 +20,34 @@ import Dialog from '../../shared/dialogProp';
 import { appFonts } from "../../shared/appFonts";
 import { appColors } from "../../shared/appColors";
 import { addTasks } from '../../redux/slices/taskSlice';
+import { setNotificationAllowed } from '../../redux/slices/authSlice';
 import { formatDateforUI, formatTimeforUI, getBackgroundColor } from '../../shared/config';
 
 const AddTask = () => {
 
     let isNetworkConnected = false
-
+    //variable holds the focus of the screen
     const isFocused = useIsFocused()
-
+    //variable helps to navigate
     const navigation = useNavigation();
-
+    //holds route value
     const { params } = useRoute()
-
+    //controls the main loader
     const [isLoad, setIsLoad] = useState(true)
-
+    //control the visibility of calendar and timer
     const [isVisible, setIsVisible] = useState({ calendar: false, timer: false })
-
+    //controls the visibility of popover
     const [openPopover, setOpenPopover] = useState(false)
-
+    //variable to prevent multipleClick
     const [isClicked, setIsClicked] = useState(false)
-
+    //variables used to map the values
     const [taskPriority, setTaskPriority] = useState([{ status: "Low", selected: false }, { status: "Medium", selected: false }, { status: "High", selected: false }])
-
+    //redux-hooks
     const dispatch = useDispatch();
+    //redux-kook
+    const { notificationAllowed } = useSelector(state => state?.authSlice)
 
-    const { tasks } = useSelector(state => state?.taskSlice)
-
+    //leaveDialog message for popover
     const leaveDialogProps = {
         content: "You have unsaved changes. Are you sure you want to leave this page?",
         button: [{ id: 1, label: "No", color: appColors.dark, backgroundColor: appColors.light }, { id: 2, label: "Yes", color: appColors.light, backgroundColor: appColors.lightDark }],
@@ -53,15 +55,11 @@ const AddTask = () => {
     }
 
     useEffect(() => {
-        const unsubscribe = NetInfo.addEventListener((state) => {
-            isNetworkConnected = state?.isConnected
-        })
-        // Cleanup subscription
-        return () => unsubscribe();
+        getInitiate()
     }, [])
 
-
-    useEffect(() => {
+    //renders while component mounts
+    const getInitiate = () => {
         if (params?.priority) {
             setTaskPriority((prev) =>
                 prev.map((p) => ({
@@ -73,16 +71,15 @@ const AddTask = () => {
         setTimeout(() => {
             setIsLoad(false)
         }, 400);
-    }, [])
+    }
 
-
-
-
+    //validation schema
     const validationSchema = Yup.object().shape({
         title: Yup.string().required(),
         description: Yup.string().required(),
     })
 
+    //handles formik
     const formik = useFormik({
         initialValues: {
             title: params?.title ?? "",
@@ -105,6 +102,7 @@ const AddTask = () => {
         }
     })
 
+    //handles the hardware backPress
     useEffect(() => {
         const onBackPress = () => {
             if (formik?.dirty) {
@@ -118,12 +116,14 @@ const AddTask = () => {
         return () => backHandle.remove();
     }, [formik?.dirty, isFocused]);
 
+    //handle whiles the screen in edit 
     const handleTaskPriority = (status) => {
         formik?.setFieldValue("priority", status)
         setTaskPriority(prev => prev.map(item => ({ ...item, selected: item?.status === status })))
     }
 
-    const taskCreation = () => {
+    //task Creation method
+    const taskCreation = async () => {
         const data = formik?.values
         data.createdAt = new Date().getTime()
         data.modifyAt = new Date().getTime()
@@ -133,13 +133,40 @@ const AddTask = () => {
             data.apiSync = false
         }
         dispatch(addTasks(data))
-        if (data?.notifyThisTask) {
+        //if notification enabled schedule notifications
+        if (data?.notifyThisTask && notificationAllowed) {
+            const getTaskTimestamp = (dueDate, dueTime) => {
+                const dDate = new Date(dueDate);
+                const dTime = new Date(dueTime);
+                dDate.setHours(dTime.getHours());
+                dDate.setMinutes(dTime.getMinutes());
+                dDate.setSeconds(dTime.getSeconds());
+                return dDate.getTime();
+            };
 
+            const timestamp = getTaskTimestamp(data.dueDate, data.dueTime);
+            console.log("Final Timestamp:", timestamp, " Now:", Date.now())
+
+            await notifee.createTriggerNotification({
+                title: data?.title,
+                body: "Your Task Reaches Deadline",
+                android: {
+                    channelId: "default",
+                    sound: 'default',
+                    importance: AndroidImportance.HIGH,
+                }
+            }, {
+                type: TriggerType.TIMESTAMP,
+                timestamp: timestamp,
+            })
         }
-        formik?.resetForm();
-        navigation.navigate("Dashboard")
+        setTimeout(() => {
+            formik?.resetForm();
+            navigation.navigate("Dashboard")
+        });
     }
 
+    //handler backHandler
     const handleBackHandler = () => {
         if (formik?.dirty) {
             setOpenPopover(true)
@@ -147,7 +174,7 @@ const AddTask = () => {
             navigation.goBack()
         }
     }
-
+    //handles the confirmation message of popover
     const confirmation = (value) => {
         if (value === "Yes") {
             setOpenPopover(false)
@@ -159,14 +186,41 @@ const AddTask = () => {
         }
     }
 
+    //checks for notificationEnables otherwise redirect enable notification
+    const checkForNotificationEnabled = async () => {
+        const settings = await notifee.getNotificationSettings();
+
+        if (settings.authorizationStatus === notifee.AuthorizationStatus.AUTHORIZED) {
+            await notifee.createChannel({
+                id: 'default',
+                name: 'Default Channel',
+                sound: 'default',
+                importance: AndroidImportance.HIGH,
+            });
+
+            dispatch(setNotificationAllowed(true))
+            return true;
+        }
+        else {
+            Linking.openSettings()
+        }
+    }
+
 
     return (
         <SafeAreaView onStartShouldSetResponder={() => { Keyboard.dismiss(); return false }} style={{ flex: 1, backgroundColor: appColors?.lightBackground }}>
-            <View style={{ paddingTop: 15, flexDirection: "row", gap: 15, paddingHorizontal: 15 }}>
-                <Pressable onPress={() => handleBackHandler()}>
-                    <CloseIcon name='arrow-back' size={26} color={appColors?.grey} />
+            <View style={{ paddingTop: 15, flexDirection: "row", alignItems: "center", gap: 15, paddingLeft: 15, paddingRight: 20, justifyContent: "space-between" }}>
+                <View style={{ flexDirection: "row", gap: 15, alignItems: "center" }}>
+                    <Pressable onPress={() => handleBackHandler()}>
+                        <CloseIcon name='arrow-back' size={26} color={appColors?.grey} />
+                    </Pressable>
+                    <View>
+                        <Text style={{ fontSize: 17, fontFamily: appFonts?.bold, color: appColors?.grey }}>{params ? "Edit Tasks" : "Add Tasks"}</Text>
+                    </View>
+                </View>
+                <Pressable disabled={notificationAllowed} onPress={() => checkForNotificationEnabled()} style={{ alignSelf: "flex-end" }}>
+                    <MaterialIcons name={notificationAllowed ? "notifications-on" : "notifications-off"} size={23} color={notificationAllowed ? appColors?.green : appColors?.red} />
                 </Pressable>
-                <Text style={{ fontSize: 17, fontFamily: appFonts?.bold, color: appColors?.grey }}>{params ? "Edit Tasks" : "Add Tasks"}</Text>
             </View>
             {isLoad ?
                 <View style={{ flex: 1, backgroundColor: appColors?.lightBackground, justifyContent: "center", alignItems: "center" }}>
@@ -242,7 +296,7 @@ const AddTask = () => {
                         </Pressable>
                     </View>
                     <View style={{ marginTop: 20, backgroundColor: appColors?.secondary, paddingVertical: 10, borderRadius: 8 }}>
-                        <Pressable onPress={() => formik?.setFieldValue("notifyThisTask", !formik?.values?.notifyThisTask)} style={{ paddingHorizontal: 12, paddingVertical: 5, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                        <Pressable disabled={!notificationAllowed} onPress={() => formik?.setFieldValue("notifyThisTask", !formik?.values?.notifyThisTask)} style={{ paddingHorizontal: 12, paddingVertical: 5, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
                             <Text style={{ fontFamily: appFonts?.bold, color: appColors?.dark }}>{formik?.values?.notifyThisTask ? "Notification Enabled" : "Notification Off"}</Text>
                             <MaterialIcons name={formik?.values?.notifyThisTask ? "notifications-on" : "notifications-off"} size={23} color={formik?.values?.notifyThisTask ? appColors?.green : appColors?.red} />
                         </Pressable>
@@ -285,7 +339,7 @@ const AddTask = () => {
                 onCancel={() => setIsVisible({ calendar: false, timer: false })}
             />
         </SafeAreaView >
-    )/*  */
+    )
 }
 
 export default AddTask;

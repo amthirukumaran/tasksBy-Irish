@@ -1,46 +1,46 @@
+import { FlatList } from 'react-native';
 import { Divider, SearchBar } from '@rneui/base';
 import FastImage from "react-native-fast-image";
 import RBSheet from "react-native-raw-bottom-sheet";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigation } from '@react-navigation/native';
+import { useCallback, useEffect, useRef, useState, } from "react";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Pressable, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 
 //icon-Imports
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 //custom-Imports
 import { appFonts } from "../../shared/appFonts";
 import { appColors } from "../../shared/appColors";
-import { FlatList } from 'react-native-gesture-handler';
-import { useDispatch, useSelector } from 'react-redux';
 import { addFav } from '../../redux/slices/taskSlice';
 import { formatTimeforUI } from '../../shared/config';
-import { useNavigation } from '@react-navigation/native';
 
 const SearchScreen = () => {
 
     const dispatch = useDispatch();
-
+    //variable handles the navigation
     const navigation = useNavigation()
-
     //handles the safeArea
     const { top, bottom } = useSafeAreaInsets();
+    //ref control the Rbsheet
     const refRBSheet = useRef(null)
     //Variable used to control the loading state
-    const [isload, setIsload] = useState(false);
+    const [isload, setIsload] = useState(true);
     //Variable used to hold the searchText
     const [searchText, setSearchText] = useState("");
     //Variable used to store the selected sort option
     const [selectedSort, setSelectedSort] = useState({ id: null })
-
+    //variables store searched Data
     const [data, setData] = useState([]);
-
+    //reduc-hook
     const { tasks } = useSelector(state => state.taskSlice)
+    //variables hold the image location
     const noRecord = require("../../assets/images/no_record.png")
-
-
+    //holds the sorting option
     const sortby = [
         { id: 1, value: "Favourite Tasks", code: "true" },
         { id: 2, value: "Tasks Priority Low", code: "Low" },
@@ -49,7 +49,7 @@ const SearchScreen = () => {
     ]
 
     useEffect(() => {
-        setData(tasks)
+        getInitiate()
     }, [])
 
     useEffect(() => {
@@ -66,11 +66,18 @@ const SearchScreen = () => {
         }
     }, [searchText])
 
+    const getInitiate = () => {
+        setData(tasks)
+        setTimeout(() => {
+            setIsload(false)
+        }, 1000);
+    }
+    //adds fav in task data
     const handleFav = (id) => {
         dispatch(addFav(id))
         setData(prev => prev.map(itm => itm.createdAt == id ? { ...itm, favourite: !itm.favourite } : itm))
     }
-
+    //handles sort method
     const handleSortOption = (item) => {
         setIsload(true);
         if (selectedSort.id === item?.id) {
@@ -110,7 +117,7 @@ const SearchScreen = () => {
             </Pressable>
         )
     }, [])
-
+    //helper function
     const getBackgroundColor = (item) => {
         switch (item) {
             case "Low":
@@ -146,7 +153,6 @@ const SearchScreen = () => {
                         placeholder="Search by title.."
                         searchIcon={{ size: 25, color: appColors?.lightDark, style: { padding: 0, marginLeft: 5 } }}
                         allowFontScaling
-                        autoFocus={true}
                         inputMode="search"
                         placeholderTextColor={appColors?.lightDark}
                         verticalAlign="middle"

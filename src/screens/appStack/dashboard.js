@@ -14,54 +14,44 @@ import Feather from 'react-native-vector-icons/Feather';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Octicons from 'react-native-vector-icons/Octicons';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 //custom-Imports
 import Dialog from "../../shared/dialogProp"
 import { appFonts } from "../../shared/appFonts";
 import { appColors } from "../../shared/appColors";
-import { setNotificationAllowed, setUserSessionInfo } from "../../redux/slices/authSlice";
-import { formatTimeforUI } from "../../shared/config";
 import { addFav } from "../../redux/slices/taskSlice";
+import { formatTimeforUI, requestNotificationPermission } from "../../shared/config";
+import { setNotificationAllowed, setUserSessionInfo } from "../../redux/slices/authSlice";
 
 const Dashboard = () => {
 
     const dispatch = useDispatch();
+    //redux-hooks
     const { tasks } = useSelector(state => state?.taskSlice)
+    //redux-hooks
     const { userInfo, notificationAllowed } = useSelector(state => state.authSlice);
-
-    const noRecord = require("../../assets/images/no_record.png")
-
+    //for controlling rbSheet
     const refRBSheet = useRef(null)
-
-
+    //for flatlist animation
     const flatListRef = useRef(null);
-
-    const [week, setWeek] = useState([])
-
-    //handles the safeArea
-    const { bottom } = useSafeAreaInsets();
-
     //Variable used to handle the navigation
     const navigation = useNavigation();
+    //variable used to hold the current week
+    const [week, setWeek] = useState([])
+    //handles the safeArea
+    const { bottom } = useSafeAreaInsets();
+    //norecord image
+    const noRecord = require("../../assets/images/no_record.png")
     //Variable used to handle the mainScreen loader
     const [isLoad, setIsLoad] = useState(true);
-
+    //variables used for selectingDate
     const [selectedDate, setSelectedDate] = useState("");
-
+    //variable used to filter task for selected date
     const [filteredTaskData, setFilteredTaskData] = useState([])
+    //variable used to control the popover visibility
+    const [isVisible, setIsVisible] = useState(false)
 
-    const [isVisible, setIsVisible] = useState({ popOver: false, notification: false, logOut: false })
-
-    const notificationDialog = {
-        content: notificationAllowed ? "Are you sure you want to snooze notifications" : "Are you sure you want to resume notifications",
-        button: [{ id: 1, label: "No", color: appColors.dark, backgroundColor: appColors.light }, { id: 2, label: "Yes", color: appColors.light, backgroundColor: appColors.lightDark }],
-        image: {
-            iconName: notificationAllowed ? "notifications-off" : "notifications-on",
-            color: notificationAllowed ? appColors?.red : appColors?.green,
-            iconType: "MaterialIcons"
-        }
-    }
+    //logout message shown on popover
     const logOutDialog = {
         content: "Are you sure you want to logout?",
         button: [{ id: 1, label: "No", color: appColors.dark, backgroundColor: appColors.light }, { id: 2, label: "Yes", color: appColors.light, backgroundColor: appColors.lightDark }],
@@ -69,9 +59,8 @@ const Dashboard = () => {
     }
 
     useEffect(() => {
-        setIsLoad(false)
-        calculateWeekDays()
-        formatDateWithSuffix(new Date())
+        getInitiate()
+        return () => setIsLoad(true)
     }, [])
 
     useEffect(() => {
@@ -81,14 +70,26 @@ const Dashboard = () => {
                 setTimeout(() => {
                     flatListRef.current?.scrollToIndex({
                         index: todayIndex,
-                        animated: true, // Smooth scrolling
-                        viewPosition: 0.5 // Centers the item
+                        animated: true,
+                        viewPosition: 0.5
                     });
-                }, 0); // Small delay for better UI experience
+                });
             }
         }
     }, [week]);
 
+    const getInitiate = () => {
+        calculateWeekDays()
+        formatDateWithSuffix(new Date())
+        requestNotificationPermission().then(res => {
+            dispatch(setNotificationAllowed(res))
+        })
+        setTimeout(() => {
+            setIsLoad(false)
+        }, 1000);
+    }
+
+    //for calculating weekDays for flatList
     const calculateWeekDays = () => {
         const today = new Date();
         const startOfWeek = new Date(today);
@@ -110,6 +111,7 @@ const Dashboard = () => {
         setWeek(temp);
     };
 
+    //helperFunction
     const formatDateWithSuffix = (date) => {
         const day = date.getDate();
         const month = date.toLocaleString("en-US", { month: "long" });
@@ -134,6 +136,7 @@ const Dashboard = () => {
         }
     };
 
+    //handletoChange Selected Date
     const changeColor = (index) => {
         setWeek(prev => prev.map((item, ind) => ({ ...item, today: ind === index })))
         const today = new Date();
@@ -143,7 +146,7 @@ const Dashboard = () => {
         formatDateWithSuffix(today)
     }
 
-
+    //handles logout 
     const handleLogout = () => {
         if (userInfo?.providerData[0]?.providerId === "google.com") {
             GoogleSignin?.signOut()
@@ -155,24 +158,15 @@ const Dashboard = () => {
         }))
     }
 
-    const handleNotification = () => {
-        setIsVisible(prev => ({ ...prev, popOver: true, notification: true }))
-        setTimeout(() => refRBSheet.current.close())
-    }
-
+    //popover confirmation handling
     const handleConfirmation = (value) => {
         if (value === "Yes") {
-            if (isVisible?.notification) {
-                setTimeout(() => {
-                    dispatch(setNotificationAllowed(!notificationAllowed))
-                }, 400)
-            } else if (isVisible?.logOut) {
-                handleLogout()
-            }
+            handleLogout()
         }
-        setIsVisible({ logOut: false, notification: false, popOver: false })
+        setIsVisible(false)
     }
 
+    //adds fav in tasks
     const handleFav = (id) => {
         dispatch(addFav(id))
         setFilteredTaskData(prev => prev.map(item => item?.createdAt == id ? { ...item, favourite: !item.favourite } : item))
@@ -189,6 +183,7 @@ const Dashboard = () => {
         )
     }
 
+    //helper function for generatingColor
     const getBackgroundColor = (item) => {
         switch (item) {
             case "Low":
@@ -237,7 +232,7 @@ const Dashboard = () => {
     }, [selectedDate])
 
     return (
-        <SafeAreaView onStartShouldSetResponder={() => { setIsVisible(prev => ({ ...prev, popOver: false })); return false }} style={{ flex: 1, backgroundColor: appColors?.lightBackground }}>
+        <SafeAreaView onStartShouldSetResponder={() => { setIsVisible(false); return false }} style={{ flex: 1, backgroundColor: appColors?.lightBackground }}>
             <StatusBar barStyle={"dark-content"} />
             {isLoad ?
                 <View style={{ flex: 1, backgroundColor: appColors?.lightBackground, justifyContent: "center", alignItems: "center" }}>
@@ -251,7 +246,7 @@ const Dashboard = () => {
                             <Text style={{ fontFamily: appFonts?.medium, fontSize: 16 }}>Welcome Back!</Text>
                         </View>
                         <View style={{ flexDirection: "row", alignItems: "center", gap: 25, flex: 0.25, justifyContent: "flex-end" }}>
-                            <Pressable onPress={() => {/*  handleSearch() */ navigation.navigate("SearchTask") }}>
+                            <Pressable onPress={() => { navigation.navigate("SearchTask") }}>
                                 <Octicons name="search" size={24} color={appColors?.lightGrey} />
                             </Pressable>
                             <Pressable onPress={() => { refRBSheet?.current?.open() }}>
@@ -286,7 +281,7 @@ const Dashboard = () => {
                     </Pressable>
                 </View>
             }
-            <RBSheet customModalProps={{ statusBarTranslucent: true, navigationBarTranslucent: true }} ref={refRBSheet} draggable={true} closeOnPressMask={true} height={270} customStyles={{ container: { borderTopEndRadius: 20, borderTopStartRadius: 20, backgroundColor: appColors?.light } }}>
+            <RBSheet customModalProps={{ statusBarTranslucent: true, navigationBarTranslucent: true }} ref={refRBSheet} draggable={true} closeOnPressMask={true} height={230} customStyles={{ container: { borderTopEndRadius: 20, borderTopStartRadius: 20, backgroundColor: appColors?.light } }}>
                 <View style={{ flex: 1, paddingBottom: bottom, backgroundColor: appColors?.light }}>
                     <View style={{ alignItems: "center" }}>
                         <Text style={{ fontFamily: appFonts?.medium, fontSize: 16, color: appColors?.lightGrey }}>Accounts</Text>
@@ -307,18 +302,7 @@ const Dashboard = () => {
                             </View>
                         </Pressable>
                         <View style={{ marginTop: 5, }}>
-                            <Pressable onPress={() => { handleNotification() }} style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: appColors?.lightBackground, paddingVertical: 10, paddingHorizontal: 15, borderTopStartRadius: 8, borderTopEndRadius: 8 }}>
-                                <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={{ fontFamily: appFonts?.bold, color: appColors?.dark }}>{notificationAllowed ? "Task Notifications Active" : "Task Notifications Snoozed"}</Text>
-                                    </View>
-                                    <View style={{ alignSelf: "flex-end" }}>
-                                        <MaterialIcons name={notificationAllowed ? "notifications-on" : "notifications-off"} size={23} color={notificationAllowed ? appColors?.green : appColors?.red} />
-                                    </View>
-                                </View>
-                            </Pressable>
-                            <Divider style={{ borderWidth: 0.1, backgroundColor: appColors?.dark }} />
-                            <Pressable onPress={() => { refRBSheet?.current?.close(); setTimeout(() => setIsVisible({ logOut: true, popOver: true, notification: false })) }} style={{ flexDirection: "row", alignItems: "center", paddingVertical: 10, paddingBottom: 12, paddingHorizontal: 15, backgroundColor: appColors?.lightBackground, borderBottomStartRadius: 8, borderBottomEndRadius: 8 }}>
+                            <Pressable onPress={() => { refRBSheet?.current?.close(); setTimeout(() => setIsVisible(true)) }} style={{ flexDirection: "row", alignItems: "center", paddingVertical: 10, paddingBottom: 12, paddingHorizontal: 15, backgroundColor: appColors?.lightBackground, borderBottomStartRadius: 8, borderBottomEndRadius: 8 }}>
                                 <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
                                     <Feather name="share" size={23} color={appColors?.red} style={{ transform: [{ rotate: "90deg" }] }} />
                                     <Text style={{ fontFamily: appFonts?.bold, color: appColors?.red, fontSize: 14 }}>Log Out</Text>
@@ -328,7 +312,7 @@ const Dashboard = () => {
                     </View>
                 </View>
             </RBSheet>
-            <Popover onRequestClose={() => setIsVisible(prev => ({ ...prev, popOver: false }))} isVisible={isVisible?.popOver} popoverStyle={{ borderRadius: 10, paddingBottom: 35, width: 330 }} >
+            <Popover onRequestClose={() => setIsVisible(false)} isVisible={isVisible?.popOver} popoverStyle={{ borderRadius: 10, paddingBottom: 35, width: 330 }} >
                 <Dialog dialogProps={isVisible?.notification ? notificationDialog : logOutDialog} confirmation={handleConfirmation} />
             </Popover>
         </SafeAreaView>

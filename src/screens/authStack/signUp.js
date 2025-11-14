@@ -5,8 +5,8 @@ import { Input } from '@rneui/base';
 import { useDispatch } from 'react-redux';
 import Snackbar from 'react-native-snackbar';
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ActivityIndicator, Keyboard, KeyboardAvoidingView, ScrollView, Text, TouchableOpacity, View } from "react-native"
 import { createUserWithEmailAndPassword, updateProfile, reload, getAuth } from '@react-native-firebase/auth';
+import { ActivityIndicator, Keyboard, KeyboardAvoidingView, ScrollView, Text, TouchableOpacity, View } from "react-native"
 
 //custom-Imports
 import { appFonts } from "../../shared/appFonts";
@@ -16,7 +16,6 @@ import { setUserSessionInfo } from '../../redux/slices/authSlice';
 
 const SignUp = () => {
 
-
     //variable used for dispatch an action
     const dispatch = useDispatch()
     //handles the safeArea
@@ -24,7 +23,7 @@ const SignUp = () => {
     //Variable used to disable ui thread while api call
     const [buttonLoader, setButtonLoader] = useState(false);
 
-
+    //handles the validationSchema
     const validationSchema = Yup.object().shape({
         name: Yup.string()
             .required('Name is required')
@@ -42,7 +41,7 @@ const SignUp = () => {
             .required('Please re-enter your password'),
     });
 
-
+    //handles formik
     const formik = useFormik({
         initialValues: {
             name: "",
@@ -59,6 +58,7 @@ const SignUp = () => {
         }
     })
 
+    //handles the createAccount method
     const createAccount = (name, email, password) => {
 
         createUserWithEmailAndPassword(auth, email, password).then(async (res) => {

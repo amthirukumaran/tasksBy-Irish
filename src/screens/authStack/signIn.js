@@ -20,8 +20,6 @@ import { auth, parseFirebaseUser, webClientId } from "../../shared/config";
 
 const SignIn = () => {
 
-    console.log("SignInScreen mounted");
-
     //variable used for dispatch an action
     const dispatch = useDispatch()
     //handles the safeArea
@@ -34,9 +32,6 @@ const SignIn = () => {
     const [transparentLoader, setTransparentLoader] = useState(false);
     //Variable used to disable ui thread while api call
     const [buttonLoader, setButtonLoader] = useState(false);
-
-
-
     //Images
     const googleIcon = require("../../assets/images/googleIcon.png");
 
@@ -45,12 +40,12 @@ const SignIn = () => {
         setIsLoad(false)
     }, [])
 
+    //holds validationSchema
     const validationSchema = Yup.object().shape({
         email: Yup.string().required(""),
         password: Yup.string().required(""),
     })
-
-
+    //holds the formik
     const formik = useFormik({
         initialValues: {
             email: "",
@@ -65,6 +60,7 @@ const SignIn = () => {
         }
     })
 
+    //handles for loginWithEmail
     const loginWithEmailAndPassword = (email, password) => {
 
         signInWithEmailAndPassword(auth, email, password).then((res) => {
@@ -115,6 +111,7 @@ const SignIn = () => {
 
     }
 
+    //handles continueWithGoogle method
     const signInWithGoogle = () => {
         setTransparentLoader(true)
         GoogleSignin?.signIn().then(async (res) => {
