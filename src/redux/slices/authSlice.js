@@ -4,7 +4,8 @@ import { createSlice } from "@reduxjs/toolkit"
 const initialState = {
     isLoggedIn: false,
     userInfo: {},
-    token: ""
+    token: "",
+    notificationAllowed: false
 }
 
 const authSlice = createSlice({
@@ -15,9 +16,12 @@ const authSlice = createSlice({
             state.isLoggedIn = payload.isLoggedIn
             state.userInfo = payload.userInfo
             state.token = payload.token
+        },
+        setNotificationAllowed: (state, { payload }) => {
+            state.notificationAllowed = payload
         }
     }
 })
 
-export const { setUserSessionInfo } = authSlice.actions
+export const { setUserSessionInfo, setNotificationAllowed } = authSlice.actions
 export default authSlice.reducer

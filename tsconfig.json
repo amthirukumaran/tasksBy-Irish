@@ -4,7 +4,9 @@
     "**/*.ts",
     "**/*.tsx",
     "src/shared/appFonts.js",
-    "src/shared/appColors.js"
+    "src/shared/appColors.js",
+    "src/shared/dialogProp.js",
+    "src/screens/appStack/addTask.js"
   ],
   "exclude": [
     "**/node_modules",

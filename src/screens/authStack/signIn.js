@@ -1,9 +1,10 @@
 import * as Yup from 'yup';
 import { useFormik } from "formik";
+import { Input } from "@rneui/base";
 import { useDispatch } from 'react-redux';
-import { Image, Input } from "@rneui/base";
 import { useEffect, useState } from "react";
 import Snackbar from "react-native-snackbar";
+import FastImage from 'react-native-fast-image';
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
@@ -211,7 +212,7 @@ const SignIn = () => {
                             <View style={{ paddingHorizontal: 10, paddingVertical: 15 }}>
                                 <TouchableOpacity disabled={buttonLoader} onPress={() => { formik?.resetForm(); signInWithGoogle() }} activeOpacity={0.7} style={{ alignItems: "center", backgroundColor: appColors?.lightBackground, borderRadius: 8, paddingHorizontal: 15, borderWidth: 0.2, elevation: 1 }}>
                                     <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
-                                        <Image
+                                        <FastImage
                                             source={googleIcon}
                                             style={{ height: 22, width: 22, /* backgroundColor: appColors?.lightBackground, overlayColor: appColors?.lightBackground */ }}
                                         />

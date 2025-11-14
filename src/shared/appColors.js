@@ -11,9 +11,14 @@ export const appColors = {
     green: '#51ad46',
     secondary: "#DEDEDE",
     whiteGreen: '#C7F6B6',
-
-
-
+    grey: '#4b4a4a',
+    primary: "rgba(24,24,24,0.2)",
+    greyLight: "#d3d3d3",
+    greyDark: "#808080",
+    wildPink: '#ad639e',
+    digitalProduct: '#a80287',
+    purple: "#9c27b0",
+    warning: '#ffd238',
 
 
 
@@ -26,7 +31,6 @@ export const appColors = {
     // lightFontColor: '#8f8f8f',
     // labelColor: '#86939e',
     // disableTextColor: '#a0a0a0',
-    // iconColor: '#4b4a4a',
     // icon: "#b7b7b7",
     // secondary: '#ff8517',
     // red: 'red',
@@ -114,6 +118,6 @@ export const appColors = {
     // containerBgColor: "#f1f1f1",
     // containerBorder: "#D9D9D9",
     // tabDisable: "#D1D1D2",
-    // purple: "#9c27b0",
+
     // commentsBackground: "#666666"
 };
