@@ -22,6 +22,7 @@ import { appColors } from "../../shared/appColors";
 import { addFav } from "../../redux/slices/taskSlice";
 import { formatTimeforUI, requestNotificationPermission } from "../../shared/config";
 import { setNotificationAllowed, setUserSessionInfo } from "../../redux/slices/authSlice";
+import { persistor } from "../../redux/store/store";
 
 const Dashboard = () => {
 
@@ -156,6 +157,7 @@ const Dashboard = () => {
             userInfo: {},
             token: "",
         }))
+        persistor.purge();
     }
 
     //popover confirmation handling
