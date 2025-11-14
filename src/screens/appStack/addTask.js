@@ -19,13 +19,13 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Dialog from '../../shared/dialogProp';
 import { appFonts } from "../../shared/appFonts";
 import { appColors } from "../../shared/appColors";
-import { addTasks } from '../../redux/slices/taskSlice';
+import { addTasks, editTasks } from '../../redux/slices/taskSlice';
 import { setNotificationAllowed } from '../../redux/slices/authSlice';
 import { formatDateforUI, formatTimeforUI, getBackgroundColor } from '../../shared/config';
+import { color } from '@rneui/base';
 
 const AddTask = () => {
 
-    let isNetworkConnected = false
     //variable holds the focus of the screen
     const isFocused = useIsFocused()
     //variable helps to navigate
@@ -38,8 +38,8 @@ const AddTask = () => {
     const [isVisible, setIsVisible] = useState({ calendar: false, timer: false })
     //controls the visibility of popover
     const [openPopover, setOpenPopover] = useState(false)
-    //variable to prevent multipleClick
-    const [isClicked, setIsClicked] = useState(false)
+    //variable control the secondPopover
+    const [isOpen, setIsOpen] = useState(false)
     //variables used to map the values
     const [taskPriority, setTaskPriority] = useState([{ status: "Low", selected: false }, { status: "Medium", selected: false }, { status: "High", selected: false }])
     //redux-hooks
@@ -54,8 +54,16 @@ const AddTask = () => {
         image: { iconName: 'alert-outline', color: appColors?.warning }
     }
 
+    //dueTime Expires popover
+    const dueDateProps = {
+        content: "It looks like the due time is in the past. Please pick a future time instead",
+        image: { iconName: 'alert-outline', color: appColors?.warning },
+        button: [{ id: 1, label: "Okay", color: appColors?.light, backgroundColor: appColors.lightDark }]
+    }
+
     useEffect(() => {
         getInitiate()
+        console.log("params--", JSON.stringify(params, null, 4))
     }, [])
 
     //renders while component mounts
@@ -124,28 +132,27 @@ const AddTask = () => {
 
     //task Creation method
     const taskCreation = async () => {
-        const data = formik?.values
-        data.createdAt = new Date().getTime()
-        data.modifyAt = new Date().getTime()
-        if (isNetworkConnected) {
-            data.apiSync = true
-        } else {
-            data.apiSync = false
-        }
-        dispatch(addTasks(data))
         //if notification enabled schedule notifications
-        if (data?.notifyThisTask && notificationAllowed) {
-            const getTaskTimestamp = (dueDate, dueTime) => {
-                const dDate = new Date(dueDate);
-                const dTime = new Date(dueTime);
-                dDate.setHours(dTime.getHours());
-                dDate.setMinutes(dTime.getMinutes());
-                dDate.setSeconds(dTime.getSeconds());
-                return dDate.getTime();
-            };
+        const data = formik?.values
 
-            const timestamp = getTaskTimestamp(data.dueDate, data.dueTime);
-            console.log("Final Timestamp:", timestamp, " Now:", Date.now())
+        const getTaskTimestamp = (dueDate, dueTime) => {
+            const dDate = new Date(dueDate);
+            const dTime = new Date(dueTime);
+            dDate.setHours(dTime.getHours());
+            dDate.setMinutes(dTime.getMinutes());
+            dDate.setSeconds(dTime.getSeconds());
+            return dDate.getTime();
+        };
+
+        const timestamp = getTaskTimestamp(data.dueDate, data.dueTime);
+        console.log("Final Timestamp:", timestamp, " Now:", Date.now())
+        if (timestamp < Date.now()) {
+            console.log("insidw---")
+            setIsOpen(true)
+            return
+        }
+
+        if (data?.notifyThisTask && notificationAllowed) {
 
             await notifee.createTriggerNotification({
                 title: data?.title,
@@ -160,10 +167,22 @@ const AddTask = () => {
                 timestamp: timestamp,
             })
         }
+
+        data.createdAt = new Date().getTime()
+        data.modifyAt = new Date().getTime()
+        data.apiSync = false
+
+        if (params) {
+            dispatch(editTasks(data))
+        } else {
+            dispatch(addTasks(data))
+        }
         setTimeout(() => {
             formik?.resetForm();
             navigation.navigate("Dashboard")
         });
+
+
     }
 
     //handler backHandler
@@ -301,7 +320,7 @@ const AddTask = () => {
                             <MaterialIcons name={formik?.values?.notifyThisTask ? "notifications-on" : "notifications-off"} size={23} color={formik?.values?.notifyThisTask ? appColors?.green : appColors?.red} />
                         </Pressable>
                     </View>
-                    <Pressable disabled={!formik?.isValid || !formik?.dirty || isClicked} onPress={() => { setIsClicked(true); formik?.handleSubmit() }} style={{ marginTop: 40, backgroundColor: appColors?.grey, paddingVertical: 15, borderRadius: 8, justifyContent: "center", alignItems: "center" }}>
+                    <Pressable disabled={!formik?.isValid || !formik?.dirty} onPress={() => { formik?.handleSubmit() }} style={{ marginTop: 40, backgroundColor: appColors?.grey, paddingVertical: 15, borderRadius: 8, justifyContent: "center", alignItems: "center" }}>
                         <Text style={{ color: appColors?.light, fontFamily: appFonts?.medium }}>{params ? "SAVE TASK" : "CREATE TASK"}</Text>
                     </Pressable>
                 </ScrollView>
@@ -325,6 +344,9 @@ const AddTask = () => {
             </Popover>
             <Popover onRequestClose={() => setOpenPopover(false)} isVisible={openPopover} popoverStyle={{ borderRadius: 10, paddingBottom: 35, width: 330 }}>
                 <Dialog dialogProps={leaveDialogProps} confirmation={confirmation} />
+            </Popover>
+            <Popover onRequestClose={() => setIsOpen(false)} isVisible={isOpen} popoverStyle={{ borderRadius: 10, paddingBottom: 35, width: 330 }}>
+                <Dialog dialogProps={dueDateProps} confirmation={() => setIsOpen(false)} />
             </Popover>
             <DatePicker
                 modal

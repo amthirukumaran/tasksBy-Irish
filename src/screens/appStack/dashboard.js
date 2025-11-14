@@ -1,9 +1,10 @@
 import { Divider } from "@rneui/base";
-import RBSheet from "react-native-raw-bottom-sheet";
 import Popover from 'react-native-popover-view';
+import FastImage from "react-native-fast-image";
+import { persistor } from "../../redux/store/store";
+import RBSheet from "react-native-raw-bottom-sheet";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigation } from "@react-navigation/native";
-import FastImage from "react-native-fast-image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -22,7 +23,6 @@ import { appColors } from "../../shared/appColors";
 import { addFav } from "../../redux/slices/taskSlice";
 import { formatTimeforUI, requestNotificationPermission } from "../../shared/config";
 import { setNotificationAllowed, setUserSessionInfo } from "../../redux/slices/authSlice";
-import { persistor } from "../../redux/store/store";
 
 const Dashboard = () => {
 
@@ -30,7 +30,7 @@ const Dashboard = () => {
     //redux-hooks
     const { tasks } = useSelector(state => state?.taskSlice)
     //redux-hooks
-    const { userInfo, notificationAllowed } = useSelector(state => state.authSlice);
+    const { userInfo } = useSelector(state => state.authSlice);
     //for controlling rbSheet
     const refRBSheet = useRef(null)
     //for flatlist animation
